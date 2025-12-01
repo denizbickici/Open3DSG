@@ -1,0 +1,12 @@
+# Execute this:
+pip install torch==2.7.1+cu128 torchvision==0.22.1+cu128 torchaudio==2.7.1+cu128 \
+  --index-url https://download.pytorch.org/whl/cu128
+
+pip install torch-scatter -f https://data.pyg.org/whl/torch-2.7.0+cu128.html
+pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-2.7.0+cu128.html
+pip install torch-cluster -f https://data.pyg.org/whl/torch-2.7.0+cu128.html
+pip install torch-spline-conv -f https://data.pyg.org/whl/torch-2.7.0+cu128.html
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.7.0+cu128.html
+
+# Then afterwards run this:
+pip install -r requirements.txt
