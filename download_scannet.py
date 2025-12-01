@@ -126,7 +126,7 @@ def download_label_map(out_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Downloads ScanNet public data release.')
-    parser.add_argument('-o', '--out_dir', required=False, help='directory in which to download', default="./ScanNet-Dataset")
+    parser.add_argument('-o', '--out_dir', required=True, help='directory in which to download')
     parser.add_argument('--task_data', action='store_true', help='download task data (v1)')
     parser.add_argument('--label_map', action='store_true', help='download label map file')
     parser.add_argument('--v1', action='store_true', help='download ScanNet v1 instead of v2')
@@ -137,7 +137,7 @@ def main():
     parser.add_argument('--tf_semantic', action='store_true', help='download google tensorflow records for 3D segmentation / detection')
     parser.add_argument('--grit', action='store_true', help='download ScanNet files for General Robust Image Task')
     parser.add_argument('--type', help='specific file type to download (.aggregation.json, .sens, .txt, _vh_clean.ply, _vh_clean_2.0.010000.segs.json, _vh_clean_2.ply, _vh_clean.segs.json, _vh_clean.aggregation.json, _vh_clean_2.labels.ply, _2d-instance.zip, _2d-instance-filt.zip, _2d-label.zip, _2d-label-filt.zip)')
-    parser.add_argument('--skip_existing', action='store_true', default=True, help='skip download of existing files when downloading full release')
+    parser.add_argument('--skip_existing', action='store_true', help='skip download of existing files when downloading full release')
     args = parser.parse_args()
 
     print('By pressing any key to continue you confirm that you have agreed to the ScanNet terms of use as described at:')
