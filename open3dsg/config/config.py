@@ -23,7 +23,7 @@ for _, path in CONF.PATH.items():
 # Original Datasets
 CONF.PATH.R3SCAN_RAW = os.path.join(CONF.PATH.DATA, "3RScan")  # 3RScan original dataset directory
 CONF.PATH.SCANNET_RAW = os.path.join(CONF.PATH.DATA, "scannet")  # ScanNet original dataset directory
-CONF.PATH.SCANNET_RAW3D = os.path.join(CONF.PATH.SCANNET_RAW, "scannet_3d", "data")  # ScanNet original dataset directory
+CONF.PATH.SCANNET_RAW3D = os.path.join(CONF.PATH.SCANNET_RAW, "scannet_raw", "scans")  # ScanNet original dataset directory
 CONF.PATH.SCANNET_RAW2D = os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d")  # ScanNet original dataset directory
 
 # Processed Dataset
@@ -36,7 +36,7 @@ CONF.PATH.CHECKPOINTS = os.path.join(CONF.PATH.DATA_OUT, "checkpoints")
 CONF.PATH.FEATURES = os.path.join(CONF.PATH.DATA_OUT, "features")
 
 # MLOps
-CONF.PATH.MLOPS = os.path.join(CONF.PATH.BASE, "mlops")  # MLOps directory
+CONF.PATH.MLOPS = os.path.join(CONF.PATH.BASE, "data", "open3dsg_out","mlops")  # MLOps directory
 CONF.PATH.MLFLOW = os.path.join(CONF.PATH.MLOPS, "opensg", "mlflow")  # Output directory for MLFlow data
 CONF.PATH.TENSORBOARD = os.path.join(CONF.PATH.MLOPS, "opensg", "tensorboards")  # Output directory for Tensorboard data
 
