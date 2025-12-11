@@ -40,7 +40,23 @@ CONF.PATH.MLOPS = os.path.join(CONF.PATH.BASE, "data", "open3dsg_out","mlops")  
 CONF.PATH.MLFLOW = os.path.join(CONF.PATH.MLOPS, "opensg", "mlflow")  # Output directory for MLFlow data
 CONF.PATH.TENSORBOARD = os.path.join(CONF.PATH.MLOPS, "opensg", "tensorboards")  # Output directory for Tensorboard data
 
+# Create directories if they do not exist
+os.makedirs(os.path.join(CONF.PATH.DATA_OUT, "datasets"), exist_ok=True)
+os.makedirs(os.path.join(CONF.PATH.MLOPS, "opensg"), exist_ok=True)
+os.makedirs(CONF.PATH.CHECKPOINTS, exist_ok=True)
+os.makedirs(CONF.PATH.FEATURES, exist_ok=True)
+os.makedirs(CONF.PATH.MLFLOW, exist_ok=True)
+os.makedirs(CONF.PATH.TENSORBOARD, exist_ok=True)
+os.makedirs(CONF.PATH.DATA_OUT, exist_ok=True)
+os.makedirs(CONF.PATH.MLOPS, exist_ok=True)
+
+print("All paths are set up correctly.")
+
+
 for name, path in CONF.PATH.items():
     if "R3SCAN" in name:  # skip if you’re not using 3RScan
         continue
     assert os.path.exists(path), f"{path} does not exist"
+
+
+
