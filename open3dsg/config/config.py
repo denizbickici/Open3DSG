@@ -40,5 +40,7 @@ CONF.PATH.MLOPS = os.path.join(CONF.PATH.BASE, "data", "open3dsg_out","mlops")  
 CONF.PATH.MLFLOW = os.path.join(CONF.PATH.MLOPS, "opensg", "mlflow")  # Output directory for MLFlow data
 CONF.PATH.TENSORBOARD = os.path.join(CONF.PATH.MLOPS, "opensg", "tensorboards")  # Output directory for Tensorboard data
 
-for _, path in CONF.PATH.items():
+for name, path in CONF.PATH.items():
+    if "R3SCAN" in name:  # skip if you’re not using 3RScan
+        continue
     assert os.path.exists(path), f"{path} does not exist"
