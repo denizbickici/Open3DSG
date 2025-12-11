@@ -53,6 +53,10 @@ def Parser(add_help=True):
     parser.add_argument('--min_segs', type=int, default=6, help='Minimum segments for each segGroup')
     parser.add_argument('--split_method', type=str, choices=['BBOX', 'KNN'], default='BBOX', help='How to split the scene.')
 
+    # fixed paths
+    parser.add_argument('--pth_out', type=str, default=CONF.PATH.SCANNET,
+                          help='Root output dir for processed ScanNet data')
+
     return parser
 
 
