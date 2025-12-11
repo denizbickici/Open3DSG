@@ -10,7 +10,7 @@ SCANNET_DATA_PATH = '/store/datasets/scannet/scans'
 SCANNET_META_PATH = '/scratch/users/datasets_scene_graph/scannet/metadata'
 SCANNET_SPLIT_TRAIN = os.path.join(SCANNET_META_PATH, "scannetv2_train.txt")
 SCANNET_SPLIT_VAL = os.path.join(SCANNET_META_PATH, "scannetv2_val.txt")
-SCANNET_LABELS_COMB = os.path.join(SCANNET_META_PATH, "scannetv2-labels.combined.tsv")
+SCANNET_LABELS_COMB = os.path.join(SCANNET_META_PATH, "scannet-labels.combined.tsv")
 
 FILE_PATH = ROOT_PATH
 Scan3RJson_PATH = FILE_PATH+'3RScan.json'
