@@ -24,7 +24,7 @@ for _, path in CONF.PATH.items():
 CONF.PATH.R3SCAN_RAW = os.path.join(CONF.PATH.DATA, "3RScan")  # 3RScan original dataset directory
 CONF.PATH.SCANNET_RAW = os.path.join(CONF.PATH.DATA, "scannet")  # ScanNet original dataset directory
 CONF.PATH.SCANNET_RAW3D = os.path.join(CONF.PATH.SCANNET_RAW, "scannet_raw", "scans")  # ScanNet original dataset directory
-CONF.PATH.SCANNET_RAW2D = os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d")  # ScanNet original dataset directory
+CONF.PATH.SCANNET_RAW2D = os.path.join(CONF.PATH.SCANNET_RAW, "eth_scannet", "scannet_2d")  # ScanNet original dataset directory
 
 # Processed Dataset
 # CONF.PATH.R3SCAN = os.path.join(CONF.PATH.DATA, "OpenSG_3RScan")
