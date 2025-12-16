@@ -282,7 +282,7 @@ class Open2D3DSGDataset(Dataset):
             selected = list(zip(vis, frames, bbox))
 
             if dataset == 'scannet':
-                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d", scene_id, "color", s[1])) for s in selected]
+                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW2D, scene_id, "color", s[1])) for s in selected]
             else:
                 imgs = [Image.open(os.path.join(CONF.PATH.R3SCAN_RAW, scene_id, 'sequence', s[1])).resize((224, 172)) for s in selected]
 
@@ -346,7 +346,7 @@ class Open2D3DSGDataset(Dataset):
             selected = list(zip(vis, frames, pixel_ids))
             # selected = sorted(zip(vis,frames,pixel_ids))[-top_k:]
             if dataset == 'scannet':
-                imgs = [np.asarray(Image.open(os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d", scene_id, "color", s[1])))for s in selected]
+                imgs = [np.asarray(Image.open(os.path.join(CONF.PATH.SCANNET_RAW2D, scene_id, "color", s[1])))for s in selected]
             else:
                 imgs = [np.asarray(Image.open(os.path.join(CONF.PATH.R3SCAN_RAW, scene_id, 'sequence', s[1])
                                               ).resize((224, 172)).rotate(-90, expand=True)) for s in selected]
@@ -421,7 +421,7 @@ class Open2D3DSGDataset(Dataset):
             selected = list(zip(vis, frames, s_bbox, o_bbox))
 
             if dataset == 'scannet':
-                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d", scene_id, "color", s[1])) for s in selected]
+                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW2D, scene_id, "color", s[1])) for s in selected]
             else:
                 imgs = [Image.open(os.path.join(CONF.PATH.R3SCAN_RAW, scene_id, 'sequence', s[1])).resize((224, 172)) for s in selected]
 
@@ -496,7 +496,7 @@ class Open2D3DSGDataset(Dataset):
             selected = list(zip(vis, frames, s_bbox, o_bbox))
 
             if dataset == 'scannet':
-                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW, "scannet_2d", scene_id, "color", s[1])) for s in selected]
+                imgs = [Image.open(os.path.join(CONF.PATH.SCANNET_RAW2D, scene_id, "color", s[1])) for s in selected]
             else:
                 imgs = [Image.open(os.path.join(CONF.PATH.R3SCAN_RAW, scene_id, 'sequence', s[1])) for s in selected]
             rel2frame_mask[list(rel2frame.keys())[i]] = len(imgs)
