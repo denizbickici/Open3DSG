@@ -128,7 +128,7 @@ class D3SSGModule(lightning.LightningModule):
             return json.load(open(os.path.join(base_path, file_path)))["scans"]
         D3SSG_TRAIN = load_scan(CONF.PATH.R3SCAN_RAW, "3DSSG_subset/relationships_train.json")
         D3SSG_VAL = load_scan(CONF.PATH.R3SCAN_RAW, "3DSSG_subset/relationships_validation.json")
-        D3SSG_TEST = load_scan(CONF.PATH.R3SCAN_RAW, "3DSSG_subset/relationships_test.json")
+        D3SSG_TEST = None #load_scan(CONF.PATH.R3SCAN_RAW, "3DSSG_subset/relationships_test.json") # no test file provided
 
         SCANNET_TRAIN = load_scan(CONF.PATH.SCANNET, "subgraphs/relationships_train.json")
         SCANNET_VAL = load_scan(CONF.PATH.SCANNET, "subgraphs/relationships_validation.json")
