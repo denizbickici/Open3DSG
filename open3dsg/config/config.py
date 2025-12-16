@@ -12,8 +12,8 @@ CONF = EasyDict()
 
 # path
 CONF.PATH = EasyDict()
-CONF.PATH.HOME = "/scratch/users/bickici/projects/Open3DSG"  # Your home directory
-CONF.PATH.BASE = "/scratch/users/bickici"  # OpenSG directory
+CONF.PATH.HOME = "/scratch/users/bickici"  # Your home directory
+CONF.PATH.BASE = "/scratch/users/bickici/projects/Open3DSG"  # OpenSG directory
 CONF.PATH.DATA = "/scratch/users/datasets_scene_graph"  # Root path for datasets
 
 # append to syspath
@@ -36,7 +36,7 @@ CONF.PATH.CHECKPOINTS = os.path.join(CONF.PATH.DATA_OUT, "checkpoints")
 CONF.PATH.FEATURES = os.path.join(CONF.PATH.DATA_OUT, "features")
 
 # MLOps
-CONF.PATH.MLOPS = os.path.join(CONF.PATH.BASE, "data", "open3dsg_out","mlops")  # MLOps directory
+CONF.PATH.MLOPS = os.path.join(CONF.PATH.HOME, "data", "open3dsg_out","mlops")  # MLOps directory
 CONF.PATH.MLFLOW = os.path.join(CONF.PATH.MLOPS, "opensg", "mlflow")  # Output directory for MLFlow data
 CONF.PATH.TENSORBOARD = os.path.join(CONF.PATH.MLOPS, "opensg", "tensorboards")  # Output directory for Tensorboard data
 
