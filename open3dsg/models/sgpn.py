@@ -38,7 +38,7 @@ if torch.cuda.device_count() <= 1:
     dummy_text_emb = tf.zeros([1, 1, 768])
 
 
-blip2_positional_encoding = torch.load(os.path.join(CONF.PATH.CHECKPOINTS, 'blip2_positional_embedding.pt'))
+blip2_positional_encoding = torch.load(os.path.join(CONF.PATH.CHECKPOINTS, 'blip2_positional_embedding.pt'), map_location='cpu', weights_only=False)
 
 
 class SGPN(nn.Module):
@@ -141,16 +141,16 @@ class SGPN(nn.Module):
             pth = os.path.join(CONF.PATH.CHECKPOINTS, 'pointnet2_ulip.pt')
             if torch.distributed.is_initialized():
                 torch.distributed.barrier()
-                pretrained_dict = torch.load(pth, map_location=torch.device(torch.distributed.get_rank()))["state_dict"]
+                pretrained_dict = torch.load(pth, map_location=torch.device(torch.distributed.get_rank()), weights_only=False)["state_dict"]
             else:
-                pretrained_dict = torch.load(pth)["state_dict"]
+                pretrained_dict = torch.load(pth, map_location='cpu', weights_only=False)["state_dict"]
         else:
             pth = os.path.join(CONF.PATH.CHECKPOINTS, 'pointnet.pth')
             if torch.distributed.is_initialized():
                 torch.distributed.barrier()
-                pretrained_dict = torch.load(pth, map_location=torch.device(torch.distributed.get_rank()))["model_state_dict"]
+                pretrained_dict = torch.load(pth, map_location=torch.device(torch.distributed.get_rank()), weights_only=False)["model_state_dict"]
             else:
-                pretrained_dict = torch.load(pth)["model_state_dict"]
+                pretrained_dict = torch.load(pth, weights_only=False)["model_state_dict"]
 
             net_state_dict = model.state_dict()
             pretrained_dict_ = {k[5:]: v for k, v in pretrained_dict.items() if 'feat' in k and v.size() == net_state_dict[k[5:]].size()}

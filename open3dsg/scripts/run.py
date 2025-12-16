@@ -165,7 +165,7 @@ if __name__ == "__main__":
             model = D3SSGModule.load_from_checkpoint(checkpoint_path=checkpoint, strict=False,)
 
         if num_gpus == 1:
-            glob_step = torch.load(checkpoint)['global_step']
+            glob_step = torch.load(checkpoint, map_location="cpu", weights_only=False)['global_step']
             model.it = glob_step
 
         for k, v in hparams.items():
