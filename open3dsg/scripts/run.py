@@ -223,7 +223,8 @@ if __name__ == "__main__":
     if args.test is False:
         trainer.fit(model)
     else:
-        if checkpoint is None:
+        # Allow running the validation loader for feature dumping without a checkpoint
+        if checkpoint is None and not args.dump_features:
             raise ValueError("Please provide a checkpoint to test")
         # import shutil
         # shutil.copyfile(checkpoint, '/'.join(checkpoint.split('/')[:-2])+f'/eval_{glob_step}.ckpt')
