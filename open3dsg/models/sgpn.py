@@ -521,7 +521,7 @@ class SGPN(nn.Module):
             outputs = self.BLIP.generate_caption(img_embeds, **inputs_batch,
                                                  do_sample=False,
                                                  num_beams=self.hparams.get('n_beams', 5),
-                                                 max_length=20,
+                                                 max_new_tokens=20,
                                                  min_length=15,
                                                  repetition_penalty=1.5,
                                                  length_penalty=0.7,
