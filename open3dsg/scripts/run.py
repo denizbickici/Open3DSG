@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     precision = 32
     if hparams['mixed_precision']:
-        if "A100" in torch.cuda.get_device_name(0):
+        if any(x in torch.cuda.get_device_name(0) for x in ("A100", "H100", "H200")):
             precision = "bf16-mixed"
         else:
             precision = "16-mixed"
