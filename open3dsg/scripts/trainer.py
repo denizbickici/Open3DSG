@@ -678,9 +678,12 @@ class D3SSGModule(lightning.LightningModule):
 
         if type(clip_rel_emb) is torch.Tensor:
             clip_rel2frame_mask = data_dict['rel2frame_mask'][bidx][:rel_count]
-            clip_rel_mask = torch.arange(clip_rel_emb.size(1)).unsqueeze(0).to(
-                clip_rel2frame_mask.device) < clip_rel2frame_mask.unsqueeze(1)
-            clip_rel_emb[~clip_rel_mask] = np.nan
+            clip_rel_mask = torch.arange(clip_rel_emb.size(1), device=clip_rel2frame_mask.device).unsqueeze(0) < clip_rel2frame_mask.unsqueeze(1)
+            if clip_rel_emb.dim() == 4:
+                clip_rel_mask = clip_rel_mask.unsqueeze(-1).unsqueeze(-1)
+            elif clip_rel_emb.dim() == 3:
+                clip_rel_mask = clip_rel_mask.unsqueeze(-1)
+            clip_rel_emb = clip_rel_emb.masked_fill(~clip_rel_mask, np.nan)
             clip_rel_emb = torch.nanmean(clip_rel_emb, dim=1)
 
             clip_rel_emb_masked = torch.zeros_like(clip_rel_emb)
@@ -884,9 +887,12 @@ class D3SSGModule(lightning.LightningModule):
             if from_distill:
                 graph_rel_emb = data_dict['predicates_enc'][bidx][:rel_count]
 
-                clip_rel_emb_masked = clip_rel_emb
-                if self.hparams.get('avg_blip_emb'):
-                    graph_rel_emb = graph_rel_emb.unsqueeze(-2).repeat(1, clip_rel_emb.shape[-2], 1)
+                if not self.hparams.get('load_features', None):
+                    _, _, clip_rel_emb_masked = self._mask_features(data_dict, None, clip_rel_emb, bidx, None, rel_count)
+                else:
+                    clip_rel_emb_masked = clip_rel_emb
+                if self.hparams.get('avg_blip_emb') and clip_rel_emb_masked.dim() == 3:
+                    graph_rel_emb = graph_rel_emb.unsqueeze(-2).repeat(1, clip_rel_emb_masked.shape[-2], 1)
 
                 clip_rel_emb_masked = clip_rel_emb_masked.to(graph_rel_emb.dtype)
                 none_mask = torch.isnan(clip_rel_emb_masked)
@@ -955,9 +961,12 @@ class D3SSGModule(lightning.LightningModule):
 
             if from_distill:
                 graph_rel_emb = data_dict['predicates_enc'][bidx][:rel_count]
-                clip_rel_emb_masked = clip_rel_emb
-                if self.hparams.get('avg_llava_emb'):
-                    graph_rel_emb = graph_rel_emb.unsqueeze(-2).repeat(1, clip_rel_emb.shape[-2], 1)
+                if not self.hparams.get('load_features', None):
+                    _, _, clip_rel_emb_masked = self._mask_features(data_dict, None, clip_rel_emb, bidx, None, rel_count)
+                else:
+                    clip_rel_emb_masked = clip_rel_emb
+                if self.hparams.get('avg_llava_emb') and clip_rel_emb_masked.dim() == 3:
+                    graph_rel_emb = graph_rel_emb.unsqueeze(-2).repeat(1, clip_rel_emb_masked.shape[-2], 1)
 
                 clip_rel_emb_masked = clip_rel_emb_masked.to(graph_rel_emb.dtype)
                 none_mask = torch.isnan(clip_rel_emb_masked)
