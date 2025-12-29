@@ -100,6 +100,10 @@ def get_args():
                         help="predict materials from 3rscan seperate testset")
     parser.add_argument('--test_scans_3rscan', action="store_true",
                         help="test on 3rscan test set scans which are not labeled in 3dssg, it is needed for the material prediction")
+    parser.add_argument('--test_scans', default=None,
+                        help="comma-separated scan ids to evaluate (e.g., scene0011_00)")
+    parser.add_argument('--test_scan_list', default=None,
+                        help="path to txt file with scan ids (one per line)")
     parser.add_argument('--predict_from_2d', action="store_true", help="predict only using 2d models")
     parser.add_argument('--quick_eval', action='store_true', help="only eval on a few samples")
     parser.add_argument('--object_context', action="store_true", help="prompt clip with: A [object] in a scene")
@@ -111,6 +115,15 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
+
+    if args.test_scans or args.test_scan_list:
+        scans = []
+        if args.test_scans:
+            scans.extend([s.strip() for s in args.test_scans.split(",") if s.strip()])
+        if args.test_scan_list:
+            with open(args.test_scan_list, "r") as f:
+                scans.extend([line.strip() for line in f if line.strip()])
+        args.test_scans = sorted(set(scans))
 
     # if os.name == 'posix':
     #     rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)

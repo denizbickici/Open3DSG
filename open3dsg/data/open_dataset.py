@@ -695,7 +695,7 @@ class Open2D3DSGDataset(Dataset):
                 data_dict[key] = torch.from_numpy(np.stack([data[i][key] for i in range(len(data))]))
                 # data_dict[key] = np.zeros((len(9,*data[1][key].shape[1:]))
             elif type(data[0][key]) is dict:
-                if key == "id2name":
+                if key in {"id2name", "object2frame", "rel2frame"}:
                     data_dict[key] = [data[i][key] for i in range(len(data))]
             else:
                 raise

@@ -154,6 +154,16 @@ class D3SSGModule(lightning.LightningModule):
             SCANNET_VAL, SCANNET_TRAIN = None, None
         else:
             D3SSG_VAL, D3SSG_TRAIN = None, None
+        if self.hparams.get('test_scans'):
+            wanted = set(self.hparams.get('test_scans'))
+            if SCANNET_VAL is not None:
+                SCANNET_VAL = [s for s in SCANNET_VAL if s.get('scan') in wanted]
+            if SCANNET_TRAIN is not None:
+                SCANNET_TRAIN = [s for s in SCANNET_TRAIN if s.get('scan') in wanted]
+            if D3SSG_VAL is not None:
+                D3SSG_VAL = [s for s in D3SSG_VAL if s.get('scan') in wanted]
+            if D3SSG_TRAIN is not None:
+                D3SSG_TRAIN = [s for s in D3SSG_TRAIN if s.get('scan') in wanted]
         if stage == 'fit':
             if self.hparams.get('test_scans_3rscan'):
                 print('Evaluating on 3RScan test set')
@@ -553,6 +563,8 @@ class D3SSGModule(lightning.LightningModule):
         object_pred_labels = [self.obj_class_dict[idx] for idx in object_pred_idx]
         id2name = data_dict.get("id2name")
         id2name = id2name[0] if id2name else None
+        object2frame = data_dict.get("object2frame")
+        object2frame = object2frame[0] if object2frame else {}
 
         predicates_top1 = [""] * rel_count
         if predicates_mapped is not None:
@@ -602,6 +614,118 @@ class D3SSGModule(lightning.LightningModule):
             out_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_rank{self.global_rank}.json")
         with open(out_path, "w") as f:
             json.dump(graph, f, indent=2)
+
+        objects_dump = {"scan_id": data_dict["scan_id"][0], "objects": {}}
+        bboxes = data_dict.get("objects_bbox")
+        if bboxes is not None:
+            bboxes = bboxes[0][:obj_count].cpu().tolist()
+        else:
+            bboxes = [None] * obj_count
+
+        for idx, obj_id in enumerate(object_ids):
+            key = f"object_{idx + 1}"
+            bbox = bboxes[idx] if idx < len(bboxes) else None
+            bbox_extent = bbox[:3] if bbox else None
+            bbox_center = bbox[3:6] if bbox else None
+
+            frames_info = []
+            detected_frames = []
+            frames = object2frame.get(int(obj_id)) or object2frame.get(str(int(obj_id))) or []
+            for frame_info in frames:
+                if len(frame_info) < 4:
+                    continue
+                frame_id, pixels, vis, bbox2d = frame_info[:4]
+                detected_frames.append(frame_id)
+                frames_info.append({
+                    "frame_id": frame_id,
+                    "visibility": float(vis),
+                    "bbox": [int(v) for v in bbox2d],
+                    "pixel_count": int(pixels),
+                })
+            frames_info = sorted(frames_info, key=lambda x: x["visibility"], reverse=True)
+            detected_frames = [f["frame_id"] for f in frames_info]
+
+            objects_dump["objects"][key] = {
+                "id": int(obj_id),
+                "object_tag": object_pred_labels[idx],
+                "bbox_extent": bbox_extent,
+                "bbox_center": bbox_center,
+                "detected_frames": detected_frames,
+                "frame_detections": frames_info,
+            }
+
+        edges_dump = {"scan_id": data_dict["scan_id"][0], "edges": {}}
+        for i, edge in enumerate(edges):
+            s_id = edge["subject_id"]
+            o_id = edge["object_id"]
+            s_tag = None
+            o_tag = None
+            if s_id is not None:
+                try:
+                    s_idx = object_ids.index(s_id)
+                    s_tag = object_pred_labels[s_idx]
+                except ValueError:
+                    s_tag = None
+            if o_id is not None:
+                try:
+                    o_idx = object_ids.index(o_id)
+                    o_tag = object_pred_labels[o_idx]
+                except ValueError:
+                    o_tag = None
+
+            rel = edge.get("predicate", "")
+            edge_desc = ""
+            if s_tag and o_tag and rel:
+                edge_desc = f"{s_tag} {rel} {o_tag}"
+
+            edges_dump["edges"][f"edge_{i}"] = {
+                "edge_id": i,
+                "edge_description": edge_desc,
+                "object_1_id": s_id,
+                "object_1_tag": s_tag,
+                "object_2_id": o_id,
+                "object_2_tag": o_tag,
+                "relationship": rel,
+            }
+
+        objects_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_objects.json")
+        edges_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_edges.json")
+        if os.path.exists(objects_path):
+            objects_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_objects_rank{self.global_rank}.json")
+        if os.path.exists(edges_path):
+            edges_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_edges_rank{self.global_rank}.json")
+        with open(objects_path, "w") as f:
+            json.dump(objects_dump, f, indent=2)
+        with open(edges_path, "w") as f:
+            json.dump(edges_dump, f, indent=2)
+
+        dataset = data_dict.get("dataset")
+        dataset = dataset[0] if dataset else None
+        clip_dump = {
+            "scan_id": data_dict["scan_id"][0],
+            "dataset": [dataset] if dataset else [],
+            "objects": {},
+        }
+        clip_obj_emb = data_dict["clip_obj_encoding"][0][:obj_count]
+        if not self.hparams.get('load_features', None):
+            _, clip_obj_emb, _ = self._mask_features(data_dict, clip_obj_emb, None, 0, obj_count, None)
+        clip_obj_emb = torch.nan_to_num(clip_obj_emb, nan=0.0, posinf=0.0, neginf=0.0)
+        clip_obj_emb = clip_obj_emb.detach().cpu().tolist()
+
+        for idx, obj_id in enumerate(object_ids):
+            key = f"object_{idx + 1}"
+            emb = clip_obj_emb[idx] if idx < len(clip_obj_emb) else []
+            clip_dump["objects"][key] = {
+                "id": int(obj_id),
+                "object_tag": object_pred_labels[idx],
+                "clip_embedding": emb,
+            }
+
+        clip_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_clip_embeddings.json")
+        if os.path.exists(clip_path):
+            clip_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_clip_embeddings_rank{self.global_rank}.json")
+        with open(clip_path, "w") as f:
+            json.dump(clip_dump, f, indent=2)
 
     @torch.no_grad()
     def on_test_epoch_end(self,):
