@@ -94,6 +94,8 @@ def get_args():
     parser.add_argument('--n_beams', type=int, default=5, help="number of beams for beam search in LLM output")
     parser.add_argument('--gt_objects', action="store_true", help="Use GT objects for predicate prediction")
     parser.add_argument('--vis_graphs', action="store_true", help="save graph predictions to disk")
+    parser.add_argument('--dump_scene_graphs', action="store_true", help="dump predicted scene graphs as json")
+    parser.add_argument('--scene_graph_dir', default=None, help="output dir for scene graph jsons")
     parser.add_argument('--predict_materials', action="store_true",
                         help="predict materials from 3rscan seperate testset")
     parser.add_argument('--test_scans_3rscan', action="store_true",

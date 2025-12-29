@@ -421,6 +421,19 @@ class D3SSGModule(lightning.LightningModule):
 
         self.rel_vocab = F.normalize(torch.from_numpy(self.rel_mapper.encode(self.pred_class_dict)), dim=-1).cuda()
         self.vis_dump_dir = CONF.PATH.BASE+'/vis_graphs/'+self.hparams['run_name'] + f"_{datetime.now().strftime('%Y-%m-%d-%H-%M')}"
+        self.scene_graph_dump_dir = None
+        if self.hparams.get('dump_scene_graphs'):
+            base_dir = self.hparams.get('scene_graph_dir')
+            run_name = self.hparams.get('run_name') or 'run'
+            if base_dir:
+                self.scene_graph_dump_dir = base_dir
+            else:
+                self.scene_graph_dump_dir = os.path.join(
+                    CONF.PATH.BASE,
+                    'scene_graphs',
+                    f"{run_name}_{datetime.now().strftime('%Y-%m-%d-%H-%M')}",
+                )
+            os.makedirs(self.scene_graph_dump_dir, exist_ok=True)
 
     @torch.no_grad()
     def test_step(self, data_dict, batch_ixd):
@@ -431,6 +444,7 @@ class D3SSGModule(lightning.LightningModule):
             self._dump_features(pred_dict, data_dict["objects_id"].size(0), path=self.clip_path)
             return
         vis = self.hparams.get('vis_graphs')
+        predicates_mapped = None
 
         if self.hparams['predict_from_2d']:
             objects_predict_clip, objects_probs_clip, object_mostlikely_clip, objects_valid_clip = self._predict_obj_from_clip(
@@ -463,6 +477,9 @@ class D3SSGModule(lightning.LightningModule):
         if self.hparams.get('predict_colors'):
             colors_predict, colors_probs, colors_mostlikely, colors_valid = self._predict_obj_from_emb(
                 pred_dict, data_dict['objects_id'].shape[0], query_colors)
+
+        if self.hparams.get('dump_scene_graphs'):
+            self._dump_scene_graph_json(data_dict, object_mostlikely, predicates_mapped)
 
         if vis:
             if self.hparams.get('dataset') == '3rscan':
@@ -525,6 +542,66 @@ class D3SSGModule(lightning.LightningModule):
 
         self.test_step_outputs.append(eval_dict)
         return None
+
+    def _dump_scene_graph_json(self, data_dict, object_mostlikely, predicates_mapped):
+        if not self.scene_graph_dump_dir:
+            return
+        obj_count = int(data_dict["objects_count"][0].item())
+        rel_count = int(data_dict["predicate_count"][0].item())
+        object_ids = data_dict["objects_id"][0][:obj_count].cpu().tolist()
+        object_pred_idx = object_mostlikely[0][:obj_count].cpu().tolist()
+        object_pred_labels = [self.obj_class_dict[idx] for idx in object_pred_idx]
+        id2name = data_dict.get("id2name")
+        id2name = id2name[0] if id2name else None
+
+        predicates_top1 = [""] * rel_count
+        if predicates_mapped is not None:
+            pred_arr = np.array(predicates_mapped[0])
+            if pred_arr.ndim == 2:
+                predicates_top1 = pred_arr[:rel_count, 0].tolist()
+            else:
+                predicates_top1 = pred_arr[:rel_count].tolist()
+        predicates_top1 = [str(p) for p in predicates_top1]
+
+        nodes = []
+        for idx, obj_id in enumerate(object_ids):
+            node = {
+                "index": int(idx),
+                "object_id": int(obj_id),
+                "pred_label": object_pred_labels[idx],
+                "pred_label_idx": int(object_pred_idx[idx]),
+            }
+            if id2name:
+                gt_label = id2name.get(str(int(obj_id))) or id2name.get(int(obj_id))
+                if gt_label is not None:
+                    node["gt_label"] = gt_label
+            nodes.append(node)
+
+        edges = []
+        edge_idx = data_dict["edges"][0][:rel_count].cpu().numpy()
+        for i, (s_idx, o_idx) in enumerate(edge_idx):
+            s_idx = int(s_idx)
+            o_idx = int(o_idx)
+            edges.append({
+                "subject_idx": s_idx,
+                "object_idx": o_idx,
+                "subject_id": int(object_ids[s_idx]) if s_idx < len(object_ids) else None,
+                "object_id": int(object_ids[o_idx]) if o_idx < len(object_ids) else None,
+                "predicate": predicates_top1[i] if i < len(predicates_top1) else "",
+            })
+
+        graph = {
+            "scan_id": data_dict["scan_id"][0],
+            "objects": nodes,
+            "edges": edges,
+        }
+
+        scan_id = str(data_dict["scan_id"][0]).replace("/", "_")
+        out_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}.json")
+        if os.path.exists(out_path):
+            out_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_rank{self.global_rank}.json")
+        with open(out_path, "w") as f:
+            json.dump(graph, f, indent=2)
 
     @torch.no_grad()
     def on_test_epoch_end(self,):
