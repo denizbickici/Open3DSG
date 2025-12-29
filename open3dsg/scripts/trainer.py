@@ -97,12 +97,25 @@ class D3SSGModule(lightning.LightningModule):
             os.path.join(CONF.PATH.R3SCAN_RAW, "relationships.txt"), "r").readlines()]
         self.rel2idx = dict(zip(self.pred_class_dict_orig, range(len(self.pred_class_dict_orig))))
         self.known_mapping = dict(zip(self.pred_class_dict, self.pred_class_dict))
-        self.known_mapping['to the left of'] = 'left of'
-        self.known_mapping['to the right of'] = 'right of'
-        self.known_mapping['next to'] = 'close by'  # 'none'
-        self.known_mapping['above'] = 'higher than'  # 'none'
-        self.known_mapping['under'] = 'lower than'
-        self.known_mapping['placed on top'] = 'standing on'  # 'supported by'
+        def map_known(src, *targets):
+            for target in targets:
+                if target in self.rel2idx:
+                    self.known_mapping[src] = target
+                    return
+
+        map_known('to the left of', 'left', 'left of')
+        map_known('to the right of', 'right', 'right of')
+        map_known('in front of', 'front', 'in front of')
+        map_known('next to', 'close by', 'next to')  # 'none'
+        map_known('near', 'close by', 'near')
+        map_known('above', 'higher than', 'above')  # 'none'
+        map_known('under', 'lower than', 'under')
+        map_known('placed on top', 'standing on', 'supported by', 'placed on top')
+        map_known('the same symmetry as', 'same symmetry as', 'the same symmetry as')
+        map_known('the same as', 'same as', 'the same as')
+        map_known('covering', 'cover', 'covering')
+        map_known('and', 'none', 'and')
+        map_known('or', 'none', 'or')
 
         def map_rel2idx(class_name):
             return self.rel2idx.get(class_name, 0)
