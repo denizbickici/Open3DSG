@@ -563,7 +563,7 @@ class D3SSGModule(lightning.LightningModule):
         object_pred_labels = [self.obj_class_dict[idx] for idx in object_pred_idx]
         id2name = data_dict.get("id2name")
         id2name = id2name[0] if id2name else None
-        object2frame = data_dict.get("object2frame")
+        object2frame = data_dict.get("obj2frame")
         object2frame = object2frame[0] if object2frame else {}
 
         predicates_top1 = [""] * rel_count
