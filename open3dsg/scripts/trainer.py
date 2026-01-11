@@ -565,6 +565,8 @@ class D3SSGModule(lightning.LightningModule):
         id2name = id2name[0] if id2name else None
         object2frame = data_dict.get("obj2frame")
         object2frame = object2frame[0] if object2frame else {}
+        top_k_frames = int(self.hparams.get("top_k_frames") or 5)
+        max_frame_detections = int(self.hparams.get("scene_graph_max_frame_detections") or 10)
 
         predicates_top1 = [""] * rel_count
         if predicates_mapped is not None:
@@ -629,21 +631,35 @@ class D3SSGModule(lightning.LightningModule):
             bbox_center = bbox[3:6] if bbox else None
 
             frames_info = []
-            detected_frames = []
-            frames = object2frame.get(int(obj_id)) or object2frame.get(str(int(obj_id))) or []
+            frames_brief = []
+            frames = (
+                object2frame.get(int(obj_id))
+                or object2frame.get(str(int(obj_id)))
+                or object2frame.get(idx)
+                or object2frame.get(str(idx))
+                or []
+            )
             for frame_info in frames:
-                if len(frame_info) < 4:
+                if not isinstance(frame_info, (list, tuple)):
                     continue
-                frame_id, pixels, vis, bbox2d = frame_info[:4]
-                detected_frames.append(frame_id)
-                frames_info.append({
-                    "frame_id": frame_id,
-                    "visibility": float(vis),
-                    "bbox": [int(v) for v in bbox2d],
-                    "pixel_count": int(pixels),
-                })
+                if len(frame_info) < 3:
+                    continue
+                frame_id, pixels, vis = frame_info[:3]
+                frames_brief.append((frame_id, float(vis)))
+                bbox2d = frame_info[3] if len(frame_info) > 3 else None
+                if not bbox2d:
+                    continue
+                if isinstance(bbox2d, (list, tuple)) and len(bbox2d) >= 4:
+                    frames_info.append({
+                        "frame_id": frame_id,
+                        "visibility": float(vis),
+                        "bbox": [int(v) for v in bbox2d[:4]],
+                        "pixel_count": int(pixels) if pixels is not None else 0,
+                    })
+            frames_brief = sorted(frames_brief, key=lambda x: x[1], reverse=True)
+            detected_frames = [f[0] for f in frames_brief[:top_k_frames]]
             frames_info = sorted(frames_info, key=lambda x: x["visibility"], reverse=True)
-            detected_frames = [f["frame_id"] for f in frames_info]
+            frames_info = frames_info[:max_frame_detections]
 
             objects_dump["objects"][key] = {
                 "id": int(obj_id),
