@@ -245,8 +245,6 @@ class Preprocessor():
         obj_id_list = []
         for k, _ in relationships_scan["objects"].items():
             obj_id_list.append(int(k))
-        if len(obj_id_list) > 10 or len(obj_id_list) < 4:
-            return None
 
         objects = {}  # object mapping to its belonging points
         obb = {}  # obb in this scan split, size equals objects num
@@ -309,21 +307,9 @@ class Preprocessor():
 
         # (frame, pixels, vis_fraction, bbox)
         object2frame_split = {}
-        drop = []
-        for o_i, o in enumerate(objects_id):
-            if object2fame.get(o, None) is None:
-                drop.append(o_i)
-            else:
-                object2frame_split[o] = object2fame[o]
-
-        if len(objects_id)-len(drop) < 4:
-            raise Exception('too few visible objects, scene missalignment possible')
-        for d in sorted(drop, reverse=True):
-            objects_id.pop(d)
-            objects_cat.pop(d)
-            objects_pcl = np.delete(objects_pcl, d, 0)
-            objects_pcl_glob = np.delete(objects_pcl_glob, d, 0)
-            objects_num.pop(d)
+        for o in objects_id:
+            # Keep all objects for eval; objects without 2D matches get an empty frame list.
+            object2frame_split[o] = object2fame.get(o, [])
 
         # predicate input of PointNet, including points in the union bounding box of subject and object
         # here consider every possible combination between objects, if there doesn't exist relation in the training file,
@@ -356,11 +342,13 @@ class Preprocessor():
             for rel in pairs:
 
                 s, o = rel
-                s_fids = [f[0] for f in object2fame[s]]
-                o_fids = [f[0] for f in object2fame[o]]
+                s_frames = object2frame_split.get(s, [])
+                o_frames = object2frame_split.get(o, [])
+                s_fids = [f[0] for f in s_frames]
+                o_fids = [f[0] for f in o_frames]
                 shared_frames = set(s_fids) & set(o_fids)
-                s_o_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in object2fame[s] if i in shared_frames]
-                o_s_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in object2fame[o] if i in shared_frames]
+                s_o_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in s_frames if i in shared_frames]
+                o_s_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in o_frames if i in shared_frames]
                 # (frame, s_pixels, o_pixels, s_vis, o_vis, s_bbox, o_bbox)
                 rel2frame_split = [(s_f[0], s_f[1], o_f[1], s_f[2], o_f[2], s_f[3], o_f[3]) for s_f, o_f in zip(s_o_frames, o_s_frames)]
                 union_pcl = []

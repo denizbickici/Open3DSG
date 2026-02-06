@@ -114,8 +114,7 @@ def generate_groups(cloud: trimesh.points.PointCloud, segments: np.ndarray, dist
             filtered_segments = segments[np.where(filter_mask > 0)[0]]
             segment_ids = np.unique(filtered_segments)
             # print('segGroup {} has {} segments.'.format(index,len(segment_ids)))
-            if len(segment_ids) < min_seg_per_group:
-                continue
+            # Keep small groups as well to avoid filtering out valid subgraphs.
 
             # problem -> 30/2 is still bigger than 10
             if len(segment_ids) > 9 and len(segment_ids) <= 18:

@@ -231,21 +231,9 @@ class Preprocessor():
 
         # (frame, pixels, vis_fraction, bbox)
         object2frame_split = {}
-        drop = []
-        for o_i, o in enumerate(objects_id):
-            if object2fame.get(str(o), None) is None:
-                drop.append(o_i)
-            else:
-                object2frame_split[o] = object2fame[str(o)]
-        if len(objects_id)-len(drop) < 4:
-            print('too few visible objects, scene missalignment possible')
-            return
-            # raise Exception('too few visible objects, scene missalignment possible')
-        for d in sorted(drop, reverse=True):
-            objects_id.pop(d)
-            objects_cat.pop(d)
-            objects_pcl = np.delete(objects_pcl, d, 0)
-            objects_num.pop(d)
+        for o in objects_id:
+            # Keep all objects for eval; objects without 2D matches get an empty frame list.
+            object2frame_split[o] = object2fame.get(str(o), [])
 
         # predicate input of PointNet, including points in the union bounding box of subject and object
         # here consider every possible combination between objects, if there doesn't exist relation in the training file,
@@ -284,11 +272,13 @@ class Preprocessor():
                     if rel == triple[:2]:
                         pred_cls[triple[2]] = 1
                 s, o = rel
-                s_fids = [f[0] for f in object2fame[str(s)]]
-                o_fids = [f[0] for f in object2fame[str(o)]]
+                s_frames = object2frame_split.get(s, [])
+                o_frames = object2frame_split.get(o, [])
+                s_fids = [f[0] for f in s_frames]
+                o_fids = [f[0] for f in o_frames]
                 shared_frames = set(s_fids) & set(o_fids)
-                s_o_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in object2fame[str(s)] if i in shared_frames]
-                o_s_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in object2fame[str(o)] if i in shared_frames]
+                s_o_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in s_frames if i in shared_frames]
+                o_s_frames = [(i, k, p, b, pix) for (i, k, p, b, pix) in o_frames if i in shared_frames]
                 # union_pcl_ = pcl_array[within_bbox2(pcl_array, obb[s]) | within_bbox2(pcl_array, obb[o])]
                 # union_ins = inst_array[within_bbox2(pcl_array, obb[s]) | within_bbox2(pcl_array, obb[o])]
                 # union_pcl_flag = np.zeros_like(union_ins)

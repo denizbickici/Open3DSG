@@ -305,11 +305,14 @@ def image_3d_mapping(scan, image_list, color_list, img_names, point_cloud, insta
         depth = depth.reshape(image_dim[::-1])/1000
         for inst in instance_names.keys():
             locs_in = point_cloud[squeezed_instances == int(inst)]
+            if locs_in.shape[0] == 0:
+                continue
             mapping = compute_mapping(world_to_camera, locs_in, depth, np.array(intrinsics), boarder_pixels, vis_tresh, image_dim).T
             homog_points = mapping[:, 2] == 1
             ratio = (homog_points).sum()/mapping.shape[0]
             pixels = mapping[:, -1].sum()
-            if pixels > 12 and ((ratio > 0.3 or pixels > 80) or (instance_names[inst] in ['wall', 'floor'] and pixels > 80)):
+            # Keep any valid projection for eval; avoid filtering by fixed visibility thresholds.
+            if pixels > 0 and homog_points.any():
                 if inst not in object2frame:
                     object2frame[inst] = []
                 obj_points = mapping[homog_points]
