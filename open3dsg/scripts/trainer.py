@@ -156,14 +156,23 @@ class D3SSGModule(lightning.LightningModule):
             D3SSG_VAL, D3SSG_TRAIN = None, None
         if self.hparams.get('test_scans'):
             wanted = set(self.hparams.get('test_scans'))
+            # Use prefix matching to include all subgraph splits (e.g., scene0011_00 matches scene0011_00-0, scene0011_00-1, etc.)
+            def _matches_wanted(scan_id):
+                if scan_id in wanted:
+                    return True
+                # Check if scan_id starts with any wanted base ID followed by a split suffix
+                for w in wanted:
+                    if scan_id.startswith(w + '-') or scan_id == w:
+                        return True
+                return False
             if SCANNET_VAL is not None:
-                SCANNET_VAL = [s for s in SCANNET_VAL if s.get('scan') in wanted]
+                SCANNET_VAL = [s for s in SCANNET_VAL if _matches_wanted(s.get('scan', ''))]
             if SCANNET_TRAIN is not None:
-                SCANNET_TRAIN = [s for s in SCANNET_TRAIN if s.get('scan') in wanted]
+                SCANNET_TRAIN = [s for s in SCANNET_TRAIN if _matches_wanted(s.get('scan', ''))]
             if D3SSG_VAL is not None:
-                D3SSG_VAL = [s for s in D3SSG_VAL if s.get('scan') in wanted]
+                D3SSG_VAL = [s for s in D3SSG_VAL if _matches_wanted(s.get('scan', ''))]
             if D3SSG_TRAIN is not None:
-                D3SSG_TRAIN = [s for s in D3SSG_TRAIN if s.get('scan') in wanted]
+                D3SSG_TRAIN = [s for s in D3SSG_TRAIN if _matches_wanted(s.get('scan', ''))]
         if stage == 'fit':
             if self.hparams.get('test_scans_3rscan'):
                 print('Evaluating on 3RScan test set')
