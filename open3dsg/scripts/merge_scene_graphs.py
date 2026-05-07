@@ -300,16 +300,20 @@ def merge_edge_files(graphs, object_tags, keep_all_edges=False, drop_none=False)
     return edges_out
 
 
-def merge_clip_files(graphs, object_tags):
-    # Merge clip embeddings: average embeddings per object_id; object_tag by majority vote if needed.
+def merge_embedding_files(graphs, object_tags, embedding_key):
+    # Merge embeddings: average vectors per object_id; object_tag by majority vote if needed.
     tag_counts = defaultdict(Counter)
     sums = {}
     counts = defaultdict(int)
     datasets = set()
+    embedding_types = set()
 
     for graph in graphs:
         for ds in graph.get("dataset", []):
             datasets.add(ds)
+        embedding_type = graph.get("embedding_type")
+        if embedding_type:
+            embedding_types.add(str(embedding_type))
         objects = graph.get("objects", {})
         if not isinstance(objects, dict):
             continue
@@ -323,7 +327,7 @@ def merge_clip_files(graphs, object_tags):
             tag = obj.get("object_tag")
             if tag is not None:
                 tag_counts[obj_id][str(tag)] += 1
-            emb = obj.get("clip_embedding")
+            emb = obj.get(embedding_key)
             if not isinstance(emb, list):
                 continue
             if obj_id not in sums:
@@ -345,10 +349,21 @@ def merge_clip_files(graphs, object_tags):
         merged[f"object_{idx + 1}"] = {
             "id": obj_id,
             "object_tag": tag,
-            "clip_embedding": avg,
+            embedding_key: avg,
         }
 
-    return {"dataset": sorted(datasets), "objects": merged}
+    out = {"dataset": sorted(datasets), "objects": merged}
+    if embedding_types:
+        out["embedding_type"] = sorted(embedding_types)[0]
+    return out
+
+
+def merge_clip_files(graphs, object_tags):
+    return merge_embedding_files(graphs, object_tags, "clip_embedding")
+
+
+def merge_gcn_files(graphs, object_tags):
+    return merge_embedding_files(graphs, object_tags, "gcn_embedding")
 
 
 def main():
@@ -357,7 +372,7 @@ def main():
     output_dir = args.output_dir or os.path.join(input_dir, "merged")
     os.makedirs(output_dir, exist_ok=True)
 
-    groups = defaultdict(lambda: {"combined": [], "objects": [], "edges": [], "clip": []})
+    groups = defaultdict(lambda: {"combined": [], "objects": [], "edges": [], "clip": [], "gcn": []})
     for path in iter_json_files(input_dir, args.recursive):
         if output_dir and path.startswith(os.path.join(output_dir, "")):
             continue
@@ -373,6 +388,8 @@ def main():
             graph_type = "edges"
         elif name.endswith("_clip_embeddings.json"):
             graph_type = "clip"
+        elif name.endswith("_gcn_embeddings.json"):
+            graph_type = "gcn"
         else:
             graph_type = "combined"
         scan_id = graph.get("scan_id")
@@ -419,6 +436,13 @@ def main():
             out_path = os.path.join(output_dir, f"{scan_id}_clip_embeddings.json")
             with open(out_path, "w") as f:
                 json.dump(merged_clip, f, indent=2)
+
+        if bucket["gcn"]:
+            merged_gcn = merge_gcn_files(bucket["gcn"], object_tags)
+            merged_gcn["scan_id"] = scan_id
+            out_path = os.path.join(output_dir, f"{scan_id}_gcn_embeddings.json")
+            with open(out_path, "w") as f:
+                json.dump(merged_gcn, f, indent=2)
 
     print(f"Merged {len(groups)} scenes into {output_dir}")
 

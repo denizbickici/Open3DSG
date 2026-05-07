@@ -752,6 +752,31 @@ class D3SSGModule(lightning.LightningModule):
         with open(clip_path, "w") as f:
             json.dump(clip_dump, f, indent=2)
 
+        gcn_dump = {
+            "scan_id": data_dict["scan_id"][0],
+            "dataset": [dataset] if dataset else [],
+            "embedding_type": "objects_enc",
+            "objects": {},
+        }
+        gcn_obj_emb = data_dict["objects_enc"][0][:obj_count]
+        gcn_obj_emb = torch.nan_to_num(gcn_obj_emb, nan=0.0, posinf=0.0, neginf=0.0)
+        gcn_obj_emb = gcn_obj_emb.detach().cpu().tolist()
+
+        for idx, obj_id in enumerate(object_ids):
+            key = f"object_{idx + 1}"
+            emb = gcn_obj_emb[idx] if idx < len(gcn_obj_emb) else []
+            gcn_dump["objects"][key] = {
+                "id": int(obj_id),
+                "object_tag": object_pred_labels[idx],
+                "gcn_embedding": emb,
+            }
+
+        gcn_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_gcn_embeddings.json")
+        if os.path.exists(gcn_path):
+            gcn_path = os.path.join(self.scene_graph_dump_dir, f"{scan_id}_gcn_embeddings_rank{self.global_rank}.json")
+        with open(gcn_path, "w") as f:
+            json.dump(gcn_dump, f, indent=2)
+
     @torch.no_grad()
     def on_test_epoch_end(self,):
         if not self.hparams.get('dataset') == '3rscan':
